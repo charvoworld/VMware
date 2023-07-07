@@ -1,0 +1,87 @@
+######Steps to remove NSX on ESXI Host. 
+ 
+#Ensure Host in maintanence mode
+
+#Do putty Login
+
+#check for vmmic and vSwitch Details
+
+# Check for vmknic's
+esxcfg-vmknic -l 
+
+# Check for vswitches
+esxcfg-vswitch -l
+
+#Check nVDS Details
+nsxdp-cli vswitch instance list
+
+
+#Command to Remove all filters
+vsipioctl clearallfilters -Override
+#Output of Command
+Removing all vmware-sfw filters...
+Cleared dvfilter include table.
+Updated all VMs to remove filters.
+Destroyed all disconnected filters (please ignore `Function not implemented' error if there is).
+
+
+
+#Command to Status netcpad
+/etc/init.d/netopad status
+
+#Output of Command
+netopa agent service is running
+nsx-sha service is running
+
+#Command to stop netcpad
+/etc/init.d/netopad stop
+
+#Output of Command
+watchdog-netopa[***]: Terminating watchdog process with PID ****
+host/vim/vmvisor/netopa
+Resource pool 'host/vim/vmvisor/netopa' released.
+netopa agent service is stopped
+watchdog-nsx-sha[***]: Terminating watchdog process with PID ****
+Terminating nsx-sha service again
+nsx-sha python is stopped
+host/vim/vmvisor/nsx-sha
+Resource pool nsx-sha released.
+
+
+
+Use the NSX cli to uninstall NSX
+#nsxcli
+> del nsx
+
+#Output of Command
+
+*************** STOP STOP STOP STOP STOP ***************
+Carefully read the requirements and limitations of this command:
+
+1. Read NSX-T documentation for 'Remove a Host from NSX-T Data Center or Uninstall NSX-T Data Center Completely'.
+2. Deletion of this Transport Node from the NSX-T UI or API failed, and this is the last resort.
+3. If this is an ESXi host:
+        a. The host must be in maintenance mode.
+        b. All resources attached to NSXPGs must be moved out.
+If the above conditions for ESXi hosts are not met, the command WILL fail.
+4. If this is a Linux host:
+        a. If KVM is managing VM tenants then shut them down before running this command.
+        b. This command should be run from the host console and may fail if run from an SSH client
+           or any other network based shell client.
+        c. The 'nsxcli -c del nsx' form of this command is not supported
+5. For command progress check /scratch/log/nsxcli.log on ESXi host or /var/log/nsxcli.log on non-ESXi host.
+Are you sure you want to remove NSX-T on this host? (yes/no) yes
+Terminated
+nsxcli> exit
+
+
+#After nsx del, vmk 0f nsx appears, remove it manually
+esxcli network ip interface remove --interface-name=<VMKID#>
+
+
+#Verify all NSX traces have been removed
+esxcli software vib list | grep -i "nsx"
+
+#Reboot host and check host status
+
+
